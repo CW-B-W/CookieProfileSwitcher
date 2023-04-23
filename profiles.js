@@ -3,6 +3,8 @@ var debugMode = false;
 var url, tab, currentDomain;
 var origProfileTable = "";
 
+var profilesStoreName = chrome.extension.inIncognitoContext ? 'profiles-incognito' : 'profiles';
+
 //CONSOLE LOG CONTROLLER //
 function debugLog(logData){
 	if(debugMode == true){
@@ -82,22 +84,22 @@ function saveProfileName(event){
 	var target = event.target;
 	
 	
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var currentDomain = $('#domain_label').html();
 		var currentProfile = $('#profile_label').html();
 		var profile = {};
 		var domainProfile = {};
 		
-		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items.profiles) || jQuery.isEmptyObject(items.profiles[currentDomain])){
+		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items[profilesStoreName]) || jQuery.isEmptyObject(items[profilesStoreName][currentDomain])){
 			domainProfile = JSON.parse('{"currentProfile":"Profile 1", "profileData":{"Profile 1": {}}}');
-			if(!jQuery.isEmptyObject(items.profiles)){
-				profile = JSON.parse(JSON.stringify(items.profiles));
+			if(!jQuery.isEmptyObject(items[profilesStoreName])){
+				profile = JSON.parse(JSON.stringify(items[profilesStoreName]));
 			}
 			profile[currentDomain] = domainProfile;
 	
 		}
 		else{
-			profile = items.profiles;
+			profile = items[profilesStoreName];
 			debugLog(JSON.stringify(profile));
 			domainProfile = profile[currentDomain];
 		}
@@ -109,7 +111,7 @@ function saveProfileName(event){
 			if(profile[currentDomain]['currentProfile'] == target.getAttribute('data-profileName')){
 				profile[currentDomain]['currentProfile'] = newProfileName;
 			}
-		chrome.storage.local.set({ "profiles": profile }, function(){
+		chrome.storage.local.set({ [profilesStoreName]: profile }, function(){
 			loadProfiles();
 		});
 		}
@@ -120,10 +122,10 @@ function saveProfileName(event){
 }
 function removeProfile(event){
 	var target = event.target.getAttribute('data-profileName');
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var currentDomain = $('#domain_label').html();
 		var currentProfile = $('#profile_label').html();
-		var profile = items.profiles;
+		var profile = items[profilesStoreName];
 		
 		delete profile[currentDomain]['profileData'][target];
 		
@@ -134,7 +136,7 @@ function removeProfile(event){
 			profile[currentDomain]['currentProfile'] = newProfile;
 		}
 		
-		chrome.storage.local.set({ "profiles": profile }, function(){
+		chrome.storage.local.set({ [profilesStoreName]: profile }, function(){
 			if(currentProfile == target){changeProfile(passedVar);}
 			loadProfiles();
 		});
@@ -142,13 +144,13 @@ function removeProfile(event){
 	});
 }
 function resetDomain(){
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var currentDomain = $('#domain_label').html();
-		var profile = items.profiles;
+		var profile = items[profilesStoreName];
 		
 		delete profile[currentDomain];
 		
-		chrome.storage.local.set({ "profiles": profile }, function(){
+		chrome.storage.local.set({ [profilesStoreName]: profile }, function(){
 			loadProfiles();
 		});
 	});
@@ -160,15 +162,15 @@ function loadProfiles(){
 	else{
 		$('#profileTable').html(origProfileTable);
 	}
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var domain = $('#domain_label').html();
 		var profile;
 		
-		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items.profiles) || jQuery.isEmptyObject(items.profiles[currentDomain])){
+		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items[profilesStoreName]) || jQuery.isEmptyObject(items[profilesStoreName][currentDomain])){
 			profile = JSON.parse('{"currentProfile":"Profile 1", "profileData":{"Profile 1": {}}}');
 		}
 		else{
-			profile = items.profiles[domain];
+			profile = items[profilesStoreName][domain];
 		}
 		$('#profile_label').html(profile['currentProfile']);
 		//$('#storage_label').html(JSON.stringify(profile['profileData']));
@@ -246,18 +248,18 @@ function loadProfiles(){
 	});
 }
 function newProfile(){
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var currentDomain = $('#domain_label').html();
 		var newProfileName = $('#profileName_input').val();
 		var profile = {};
 		var domainProfile = {};
 		
-		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items.profiles) || jQuery.isEmptyObject(items.profiles[currentDomain])){
+		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items[profilesStoreName]) || jQuery.isEmptyObject(items[profilesStoreName][currentDomain])){
 			domainProfile = JSON.parse('{"currentProfile":"Profile 1", "profileData":{"Profile 1": {}}}');
 		}
 		else{
-			domainProfile = items.profiles[currentDomain];
-			profile = items['profiles'];
+			domainProfile = items[profilesStoreName][currentDomain];
+			profile = items[profilesStoreName];
 		}
 		
 		domainProfile['profileData'][newProfileName] = "";
@@ -269,7 +271,7 @@ function newProfile(){
 		
 		if(newProfileName != "")
 		{
-			chrome.storage.local.set({ "profiles": profile }, function(){
+			chrome.storage.local.set({ [profilesStoreName]: profile }, function(){
 				loadProfiles();
 			});
 		}
@@ -291,12 +293,12 @@ function changeProfile(event){
 	chrome.cookies.getAll({domain: currentDomain}, function(cookies) {
 		var currentProfile = $('#profile_label').html();
 		
-		chrome.storage.local.get('profiles', function(items){
+		chrome.storage.local.get(profilesStoreName, function(items){
 			var currentDomain = $('#domain_label').html();
 			var oldProfileData = cookies;
-			var newProfileData = items.profiles[currentDomain]['profileData'][target.innerHTML];
+			var newProfileData = items[profilesStoreName][currentDomain]['profileData'][target.innerHTML];
 			
-			var profile = items.profiles;
+			var profile = items[profilesStoreName];
 			var domainProfiles = profile[currentDomain]['profileData'];
 			
 			domainProfiles[currentProfile] = oldProfileData;
@@ -320,7 +322,7 @@ function changeProfile(event){
 			
 			
 			if (typeof saveData === 'undefined' || saveData == true) {
-				chrome.storage.local.set({ "profiles": profile }, function(){
+				chrome.storage.local.set({ [profilesStoreName]: profile }, function(){
 					loadProfiles();
 				});
 			}

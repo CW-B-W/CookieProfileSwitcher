@@ -1,5 +1,5 @@
 var extVersionNumber = extension.getExtensionVersion();
-
+var profilesStoreName = chrome.extension.inIncognitoContext ? 'profiles-incognito' : 'profiles';
 
 function init(){
 	$('#about-extension-version').html(extVersionNumber);
@@ -17,13 +17,13 @@ function loadChangelog() {
 }
 
 function loadProfileData(){
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var profile;
-		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items.profiles)){
+		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items[profilesStoreName])){
 			
 		}
 		else{
-			profile = JSON.parse(JSON.stringify(items.profiles));
+			profile = JSON.parse(JSON.stringify(items[profilesStoreName]));
 			$('#profile-data-textarea').val(JSON.stringify(profile, undefined, "\t"));
 		}
 	});
@@ -34,7 +34,7 @@ function saveProfileData(){
 	var profile = JSON.parse($('#profile-data-textarea').val());
 	if(!jQuery.isEmptyObject(profile)){
 		if(confirm("Are you sure you want to save profile data?")){
-			chrome.storage.local.set({'profiles': profile}, function(){
+			chrome.storage.local.set({[profilesStoreName]: profile}, function(){
 			});
 		}
 		else{
@@ -46,7 +46,7 @@ function saveProfileData(){
 function clearProfileData(){
 	var profile = {};
 	if(confirm("Are you sure you want to clear profile data?")){
-		chrome.storage.local.set({'profiles': profile}, function(){
+		chrome.storage.local.set({[profilesStoreName]: profile}, function(){
 			$('#profile-data-textarea').val("");
 		});
 	}
@@ -54,13 +54,13 @@ function clearProfileData(){
 	}
 }
 function exportProfileData(){
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var profile;
-		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items.profiles)){
+		if(jQuery.isEmptyObject(items) || jQuery.isEmptyObject(items[profilesStoreName])){
 			
 		}
 		else{
-			profile = JSON.parse(JSON.stringify(items.profiles));
+			profile = JSON.parse(JSON.stringify(items[profilesStoreName]));
 			var dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(JSON.stringify(profile, undefined, "\t"));
 			downloadURI(dataUri, "CookieProfileSwitcher.json");
 		}
@@ -68,10 +68,10 @@ function exportProfileData(){
 }
 
 function clearCookieData(){
-	chrome.storage.local.get('profiles', function(items){
+	chrome.storage.local.get(profilesStoreName, function(items){
 		var profile;
-		if(!jQuery.isEmptyObject(items) && !jQuery.isEmptyObject(items.profiles)){
-			profile = JSON.parse(JSON.stringify(items.profiles));
+		if(!jQuery.isEmptyObject(items) && !jQuery.isEmptyObject(items[profilesStoreName])){
+			profile = JSON.parse(JSON.stringify(items[profilesStoreName]));
 			console.log(JSON.stringify(profile));
 		}
 	});
@@ -114,7 +114,7 @@ function importProfileData(e){
 function _imp() {
 	var _myImportedData = JSON.parse(this.result);
 	if(!jQuery.isEmptyObject(_myImportedData)){
-		chrome.storage.local.set({'profiles': _myImportedData}, function(){
+		chrome.storage.local.set({[profilesStoreName]: _myImportedData}, function(){
 			$('#profile-data-textarea').val(JSON.stringify(_myImportedData, undefined, "\t"));
 		});
 	}
